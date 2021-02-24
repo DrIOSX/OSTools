@@ -138,7 +138,8 @@ function Get-DiskDetails {
     )
     PROCESS {
         foreach ($computer in $ComputerName) {
-            $disks     = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType='3'" -ComputerName $computer
+            $disks      = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType='3'" -ComputerName $computer -ErrorVariable $err1 | Where-Object {$_.size -ne $null}
+            $ram        = (Get-WmiObject Win32_PhysicalMemory -ComputerName $computer | Measure-Object -Property capacity -Sum).sum /1gb
             foreach ($disk in $disks) {
                 $props  = @{
                     'ComputerName'  =   $computer;
@@ -147,6 +148,7 @@ function Get-DiskDetails {
                     'Size'          =   "{0:N2}" -f ($disk.size / 1GB);
                     'FreePercent'   =   "{0:N2}" -f ($disk.FreeSpace / $disk.size * 100 -as [int]);
                     'Collected'     =   (Get-Date)
+                    'Ram (GB)'      =   $ram
                 }
                 $obj = New-Object -TypeName psobject -Property $props
                 $obj.psobject.typenames.insert(0,'Report.OSTools.DiskDetails')
