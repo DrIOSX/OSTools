@@ -1,20 +1,21 @@
 $messages = DATA {
     # culture="de-de"
     ConvertFrom-StringData @"
-        Connecting  = Gonna talk to
-        Failed      = That did not work
+        Connecting = Gonna talk to
+        Failed = That did not work
 "@
 }
-Import-LocalizedData -BindingVariable messages
+#Import-LocalizedData -BindingVariable messages
 function Get-SysDiskDetails {
     [CmdletBinding()]
     param (
+        [Alias("Name","Hostname")]
         [Parameter(
             Mandatory=$true,
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
         )]
-        [string[]]$ComputerName
+        [string[]]$ComputerName = "localhost"
     )
     PROCESS {
         foreach ($computer in $ComputerName) {
@@ -80,12 +81,13 @@ function Get-SystemDetails {
     #>
     [CmdletBinding()]
     param (
+        [Alias("Name","Hostname")]
         [Parameter(
             Mandatory=$true,
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
         )]
-        [string[]]$ComputerName
+        [string[]]$ComputerName = "localhost"
     )
     PROCESS {
         foreach ($computer in $ComputerName) {
@@ -129,16 +131,17 @@ function Get-DiskDetails {
     #>
     [CmdletBinding()]
     param (
+        [Alias("Name","Hostname")]
         [Parameter(
             Mandatory=$true,
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
         )]
-        [string[]]$ComputerName
+        [string[]]$ComputerName = "localhost"
     )
     PROCESS {
         foreach ($computer in $ComputerName) {
-            $disks      = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType='3'" -ComputerName $computer -ErrorVariable $err1 | Where-Object {$_.size -ne $null}
+            $disks      = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType='3'" -ComputerName $computer | Where-Object {$_.size -ne $null}
             $ram        = (Get-WmiObject Win32_PhysicalMemory -ComputerName $computer | Measure-Object -Property capacity -Sum).sum /1gb
             foreach ($disk in $disks) {
                 $props  = @{
@@ -169,7 +172,7 @@ function Save-DiskDetailsToDatabase {
     )
     BEGIN {
         $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
-        $connection.ConnectionString = "Server=CRITHOS\SQLEXPRESS;Database=AdminData;Trusted_Connection=True;"
+        $connection.ConnectionString = "Server=CSNSQLU;Database=DiskDetails;User Id=pshell;Password=Wcdi2010!@#;"
         $connection.Open() | Out-Null
     }
     PROCESS{
@@ -209,7 +212,7 @@ function Save-DiskDetailsToDatabase {
 function Get-ComputerNamesForDiskDetailsFromDatabase {
     
     $connection = New-Object -TypeName System.Data.SqlClient.SqlConnection
-    $connection.ConnectionString = "Server=CRITHOS\SQLEXPRESS;Database=AdminData;Trusted_Connection=True;"
+    $connection.ConnectionString = "Server=CSNSQLU;Database=DiskDetails;User Id=pshell;Password=Wcdi2010!@#;"
     $connection.Open() | Out-Null
 
     $command = New-Object -TypeName System.Data.SqlClient.SqlCommand
@@ -232,7 +235,7 @@ function Get-ComputerNamesForDiskDetailsFromDatabase {
 
 function Set-ComputerState {
     [CmdletBinding(
-        SupportsShouldProcess=$true,# Turns on Whatif 
+        SupportsShouldProcess=$true,# Turns on Whatif
         ConfirmImpact='High' # and confirm.
     )]
     param (
